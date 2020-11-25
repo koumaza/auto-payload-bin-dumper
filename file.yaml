@@ -1,2 +1,3 @@
-# - name:
-#   uri:
+files:
+# - name: 'iphone12-ota-1.0.0'
+#   uri: 'https://example.com/iphone/12/ota-1.0.0.zip'
