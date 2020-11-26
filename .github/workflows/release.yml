@@ -27,16 +27,17 @@ jobs:
     - name: Env
       run: |
         pacman -Syyuuv --noconfirm --needed --debug --color always \
-        base aria2 git yq
+        base aria2 git yq fish
     - name: Checkout
       uses: actions/checkout@v2
     - name: Codecov
       uses: codecov/codecov-action@v1.0.13
     - name: Extract payload.bin
       run: |
+        chmod a+rx ./script/*
         ./script/env.fish
         ./script/build.fish
-    - name: U
+    - name: Upload build artifact
       uses: actions/upload-artifact@2.1.0
       with:
         name: img.zip
