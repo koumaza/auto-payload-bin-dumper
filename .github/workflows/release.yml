@@ -1,0 +1,84 @@
+name: Release extracted payload.bin
+on:
+  push:
+    branches: 'main'
+    tags: '!*'
+jobs:
+  Tag:
+    outputs:
+      generated_tag: ${{ steps.BumpTag.outputs.new_tag }}
+    runs-on: ubuntu-20.04
+    steps:
+      - name: CheckOut
+        uses: actions/checkout@main
+        with:
+          fetch-depth: '0'
+      - name: Bump version and push tag
+        id: BumpTag
+        uses: anothrNick/github-tag-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WITH_V: true
+  Build:
+    needs: [Tag]
+    container: archlinux
+    runs-on: ubuntu-20.04
+    steps:
+    - name: Env
+      run: |
+        pacman -Syyuuv --noconfirm --needed --debug --color always \
+        base aria2 git yq
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Codecov
+      uses: codecov/codecov-action@v1.0.13
+    - name: Extract payload.bin
+      run: |
+        ./script/env.fish
+        ./script/build.fish
+    - name: U
+      uses: actions/upload-artifact@2.1.0
+      with:
+        name: img.zip
+        path: dump/img
+  Release:
+    env:
+      generated_tag: ${{ needs.Tag.outputs.generated_tag }}
+    needs: [Tag,Build]
+    runs-on: ubuntu-20.04
+    steps:
+    - name: Download Build Artifacts
+      uses: actions/download-artifact@v2.0.1
+      with:
+        name: img.zip
+    - name: Create fonts.zip
+      run: zip -0 -r all.zip dump/img/*
+    - name: Create a Release
+      id: create_release
+      uses: actions/create-release@v1.1.2
+      env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: refs/tags/${{ env.generated_tag }}
+        release_name: Release refs/tags/${{ env.generated_tag }}
+        body: ${{ env.generated_tag }} release.
+        draft: false
+        prerelease: false
+    - name: Upload Release Asset Img
+      uses: actions/upload-release-asset@v1.0.2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: './dump/img/*'
+        asset_name: '*.img'
+        asset_content_type: application/octet-stream; charset=binary
+    - name: Upload Release Asset Zip
+      uses: actions/upload-release-asset@v1.0.2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./all.zip
+        asset_name: all.zip
+        asset_content_type: application/zip
