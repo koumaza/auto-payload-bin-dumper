@@ -49,7 +49,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - name: Download Build Artifacts
-      uses: actions/download-artifact@v2.0.1
+      uses: actions/download-artifact@v4.1.7
       with:
         name: img.zip
     - name: Create fonts.zip
